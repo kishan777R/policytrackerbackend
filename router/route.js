@@ -6,10 +6,11 @@ const fs = require('fs');
 const path = require('path');
 
 const router = express.Router();
-const Agents = require('../model/agents');
+const Agents = require('../model/agents'); const Category = require('../model/category');
+
 const Tasks = require('../model/tasks');
 const BankPostOfficeAccounts = require('../model/bank_postoffice_accounts');
-const Policy = require('../model/policies');
+const Credit_Debit = require('../model/credit_debit');
 
 var nodemailer = require('nodemailer');
 
@@ -37,6 +38,7 @@ const uploadAccountfiles = multer({ dest: "./public/uploads/account_doc" });
 const uploadProfileImage = multer({ dest: "./public/uploads/profile_image" });
 const uploadTaskfiles = multer({ dest: "./public/uploads/task_doc" });
 const uploadAgentfiles = multer({ dest: "./public/uploads/agent_doc" });
+const uploadTcredit_debitfiles = multer({ dest: "./public/uploads/credit_debit_doc" });
 
 var created_by = 1;
 const server_version_app = allconst.server_version_app;
@@ -156,13 +158,312 @@ router.post('/deleteFile', (req, res, next) => {
 
 });
 
+//Category start
+
+router.delete('/category/:category_id_int/:logged_in_user_id_int/:customer_id_int', (req, res, next) => {
+  Category.updateOne({ 'category_id_int': req.params.category_id_int }, { $set: { 'tablestatus': 'FALSE', 'deleted_by': req.params.logged_in_user_id_int, 'deleted_on': new Date() } }, async (err, deletedCategory) => {
+    if (err) {
+      res.json({ message: "Something is wrong", status: false });
+    } else {
+
+
+      Category.find({ $and: [{ "tablestatus": "TRUE" }, { "customer_id_int": req.params.customer_id_int }] }, function (err, CategryList) {
+
+        res.json({ message: "Category deleted Successfully !!", status: true, "CategryList": CategryList });
+      }).sort({ category_id_int: -1 });
+
+
+    }
+  });
+});
+
+router.get('/category/:category_id_int', (req, res, next) => {
+  Category.findOne({ $and: [{ "tablestatus": "TRUE" }, { "category_id_int": req.params.category_id_int }] }, function (err, CategoryOne) {
+    res.json(CategoryOne);
+  });
+});
+router.get('/categorylist/:customer_id_int', (req, res, next) => {
+  Category.find({ $and: [{ "tablestatus": "TRUE" }, { "customer_id_int": req.params.customer_id_int }] }, function (err, CategoryList) {
+    res.json(CategoryList);
+  }).sort({ category_id_int: -1 });
+});
+
+
+router.post('/category', (req, res, next) => {
+  if (!req.body.category_id_int || req.body.category_id_int == 0) {
+
+    // add start
+    console.log("Adding category ");
+
+    addCategory(req, res, next);
+    // add end
+
+  } else {
+    // update start
+    console.log("Updating category ");
+    updateCategory(req, res, next);
+    // update end
+  }
+});
+addCategory = (req, res, next) => {
+  Category.find({ $and: [{ "tablestatus": "TRUE" }, { category_title: req.body.category_title.trim() }, { "customer_id_int": req.params.customer_id_int }] }, function (err, CategryListC) {
+    if (err) {
+      res.json({ message: "Something is wrong " + err, status: false });
+    } else {
+      if (CategryListC.length == 0) {
+        Category.findOne({}, function (err, lastCategory) {
+          if (lastCategory) {
+            var category_id_int = lastCategory.category_id_int + 1;
+          } else {
+            var category_id_int = 1;
+          }
+          let newCategoryOBJ = new Category({
+            category_id_int: category_id_int,
+            customer_id_int: req.body.customer_id_int,
+            category_title: req.body.category_title.trim(),
+
+            created_on: new Date(),
+            created_by: req.body.logged_in_user_id_int,
+            tablestatus: 'TRUE',
+          });
+          newCategoryOBJ.save((err, newCategory) => {
+            if (err) {
+              res.json({ message: "Something is wrong in adding Category" + err, status: false, newCategory: {} });
+            } else {
+
+              Category.find({ $and: [{ "tablestatus": "TRUE" }, { "customer_id_int": req.params.customer_id_int }] }, function (err, CategryList) {
+
+                res.json({ message: "Category Added Successfully !!", status: true, "CategryList": CategryList });
+              }).sort({ category_id_int: -1 });
+
+            }
+          });
+        }).sort({ category_id_int: -1 });
+      } else {
+        res.json({ message: "Category already exists  " + err, status: false });
+      }
+    }
+  }).sort({ category_id_int: -1 });
+}
+updateCategory = (req, res, next) => {
+
+  Category.find({ $and: [{ "tablestatus": "TRUE" }, { category_title: req.body.category_title.trim() }, { "customer_id_int": req.params.customer_id_int }] }, function (err, CategryListC) {
+    if (err) {
+      res.json({ message: "Something is wrong " + err, status: false });
+    } else {
+      if (CategryListC.length == 0 || (CategryListC.length == 1 && CategryListC[0].category_id_int == req.body.category_id_int)) {
+        let updatedobj = {
+
+          category_title: req.body.category_title.trim(),
+
+          'updated_by': req.body.logged_in_user_id_int,
+          'updated_on': new Date()
+        };
+        Category.updateOne({ 'category_id_int': req.body.category_id_int }, { $set: updatedobj }, (err, updatedObj) => {
+          if (err) {
+            res.json({ message: "Something is wrong " + err, status: false, updatedObj: {} });
+          } else {
+            Category.find({ $and: [{ "tablestatus": "TRUE" }, { "customer_id_int": req.params.customer_id_int }] }, function (err, CategryList) {
+
+              res.json({ message: "Category updated Successfully !!", status: true, "CategryList": CategryList });
+            }).sort({ category_id_int: -1 });
+
+          }
+        });
+      } else {
+        res.json({ message: "Category already exists  " + err, status: false });
+      }
+    }
+  }).sort({ category_id_int: -1 });
+}
+// Category end
+
+
+//credit-debit start  
+router.post("/uploadfileofcredit_debit", uploadTcredit_debitfiles.array("photos[]"), async (req, res) => {
+  fileuploaCommon(req, res)
+});
+
+router.delete('/credit_debit/:credit_debit_id_int/:extraaction/:logged_in_user_id_int/:customer_id_int', (req, res, next) => {
+  Credit_Debit.updateOne({ 'credit_debit_id_int': req.params.credit_debit_id_int }, { $set: { 'tablestatus': 'FALSE', 'deleted_by': req.params.logged_in_user_id_int, 'deleted_on': new Date() } }, async (err, deletedcredit_debit) => {
+    if (err) {
+      res.json({ message: "Something is wrong", status: false });
+    } else {
+      res.json({ message: "Record deleted Successfully !!", status: true });
+    }
+  });
+});
+
+router.get('/credit_debit/:credit_debit_id_int', (req, res, next) => {
+  Credit_Debit.findOne({ $and: [{ "tablestatus": "TRUE" }, { "credit_debit_id_int": req.params.credit_debit_id_int }] }, function (err, credit_debitOne) {
+    res.json(credit_debitOne);
+  });
+});
+router.post('/credit_debitlist', async (req, res, next) => {
+
+  let andArr = [{ "tablestatus": "TRUE" }, { "customer_id_int": req.body.customer_id_int }];
+  //{name: {$in: ["Jonny", "Mia"]}}
+
+  if (req.body.filterPaidrecieved[0]['selected'] && !req.body.filterPaidrecieved[1]['selected']) {
+    andArr.push({ "paid_or_received": "Paid" })
+  }
+  if (!req.body.filterPaidrecieved[0]['selected'] && req.body.filterPaidrecieved[1]['selected']) {
+    andArr.push({ "paid_or_received": "Received" })
+  }
+
+  let filterPayment_modeArr = [];
+
+  req.body.filterPayment_mode.forEach((perPayMode) => {
+    if (perPayMode.selected) {
+      filterPayment_modeArr.push(perPayMode.value)
+    }
+  });
+  if (filterPayment_modeArr.length > 0) {
+    andArr.push({ payment_mode: { $in: filterPayment_modeArr } })
+  }
+
+  let filterAccountIdAccountingArr = [];
+
+  req.body.filterAccountIdAccounting.forEach((perAcc) => {
+    if (perAcc.selected) {
+      filterAccountIdAccountingArr.push(perAcc.value)
+    }
+  });
+  if (filterAccountIdAccountingArr.length > 0) {
+    andArr.push({ account_id_int: { $in: filterPayment_modeArr } })
+  }
+
+  if (req.body.searchTerm.trim()) {
+    andArr.push(
+      {
+        $or: [
+          { amount: req.body.searchTerm.trim() },
+          {  transaction_id: req.body.searchTerm.trim() }, 
+          {  transaction_ref: req.body.searchTerm.trim() }, 
+          {  payment_mode: req.body.searchTerm.trim() }, 
+          {  payment_mode_name_if_other_selected: req.body.searchTerm.trim() }, 
+
+          { paid_to_or_received_from: req.body.searchTerm.trim() },
+          { payment_title: req.body.searchTerm.trim() },
+          { otherdetails: req.body.searchTerm.trim() }
+        ]
+      }
+    );
+  }
+  if (req.body.filterPayment_date1 && req.body.filterPayment_date2) {
+  }
+  let creditDebitListTotalRecord = -1;
+  if (req.body.skip == 0) {
+    creditDebitListTotalRecord = await Credit_Debit_total_ecod(req.body.customer_id_int);
+  }
+  Credit_Debit.find({ $and: andArr }, function (err, credit_debitList) {
+    res.json({ "list": credit_debitList, "creditDebitListTotalRecord": creditDebitListTotalRecord });
+  }).sort({ credit_debit_id_int: -1 }).limit(req.body.limit).skip(req.body.skip);
+});
+Credit_Debit_total_ecod = (customer_id_int) => {
+  return Credit_Debit.find({ $and: [{ "tablestatus": "TRUE" }, { "customer_id_int": customer_id_int }] }).estimatedDocumentCount();
+}
+
+router.post('/credit_debit', (req, res, next) => {
+  if (!req.body.credit_debit_id_int || req.body.credit_debit_id_int == 0) {
+
+    // add start
+    console.log("Adding credit_debit ");
+
+    addcredit_debit(req, res, next);
+    // add end
+
+  } else {
+    // update start
+    console.log("Updating credit_debit ");
+    updatecredit_debit(req, res, next);
+    // update end
+  }
+});
+addcredit_debit = (req, res, next) => {
+  Credit_Debit.findOne({}, function (err, lastCredit_Debit) {
+    if (lastCredit_Debit) {
+      var credit_debit_id_int = lastCredit_Debit.credit_debit_id_int + 1;
+    } else {
+      var credit_debit_id_int = 1;
+    }
+    let newCredit_DebitOBJ = new Credit_Debit({
+      credit_debit_id_int: credit_debit_id_int,
+      customer_id_int: req.body.customer_id_int,
+      account_id_int: req.body.account_id_int,
+      amount: req.body.amount,
+      paid_or_received: req.body.paid_or_received ? req.body.paid_or_received.trim() : '',
+      category_id_int: req.body.category_id_int,
+      payment_title: req.body.payment_title ? req.body.payment_title.trim() : '',
+      payment_date: req.body.payment_date,
+      paid_to_or_received_from: req.body.paid_to_or_received_from,
+
+
+      payment_mode: req.body.payment_mode ? req.body.payment_mode.trim() : '',
+      cheque_issued_to: req.body.cheque_issued_to ? req.body.cheque_issued_to.trim() : '',
+      cheque_date: req.body.cheque_date ? req.body.cheque_date.trim() : '',
+      cheque_no: req.body.cheque_no ? req.body.cheque_no.trim() : '',
+      cheque_bank: req.body.cheque_bank ? req.body.cheque_bank.trim() : '',
+      transaction_id: req.body.transaction_id ? req.body.transaction_id.trim() : '',
+      otherdetails: req.body.otherdetails ? req.body.otherdetails.trim() : '',
+      transaction_ref: req.body.transaction_ref ? req.body.transaction_ref.trim() : '',
+      payment_mode_name_if_other_selected: req.body.payment_mode_name_if_other_selected ? req.body.payment_mode_name_if_other_selected.trim() : '',
+      imageArr: req.body.imageArr,
+      created_on: new Date(),
+      created_by: req.body.logged_in_user_id_int,
+      tablestatus: 'TRUE',
+    });
+    newCredit_DebitOBJ.save((err, newCredit_Debit) => {
+      if (err) {
+        res.json({ message: "Something is wrong in adding record" + err, status: false, newCredit_Debit: {} });
+      } else {
+
+        res.json({ message: "Record Added Successfully !!", status: true, });
+      }
+    });
+  }).sort({ credit_debit_id_int: -1 });;
+}
+updatecredit_debit = (req, res, next) => {
+  let updatedobj = {
+
+    account_id_int: req.body.account_id_int,
+    amount: req.body.amount,
+    paid_or_received: req.body.paid_or_received ? req.body.paid_or_received.trim() : '',
+    category_id_int: req.body.category_id_int,
+    payment_title: req.body.payment_title ? req.body.payment_title.trim() : '',
+    payment_date: req.body.payment_date,
+    payment_mode: req.body.payment_mode ? req.body.payment_mode.trim() : '',
+    cheque_issued_to: req.body.cheque_issued_to ? req.body.cheque_issued_to.trim() : '',
+    cheque_date: req.body.cheque_date ? req.body.cheque_date.trim() : '',
+    cheque_no: req.body.cheque_no ? req.body.cheque_no.trim() : '',
+    cheque_bank: req.body.cheque_bank ? req.body.cheque_bank.trim() : '',
+    transaction_id: req.body.transaction_id ? req.body.transaction_id.trim() : '',
+    otherdetails: req.body.otherdetails ? req.body.otherdetails.trim() : '',
+    paid_to_or_received_from: req.body.paid_to_or_received_from,
+    transaction_ref: req.body.transaction_ref ? req.body.transaction_ref.trim() : '',
+    payment_mode_name_if_other_selected: req.body.payment_mode_name_if_other_selected ? req.body.payment_mode_name_if_other_selected.trim() : '',
+
+
+    imageArr: req.body.imageArr,
+    'updated_by': req.body.logged_in_user_id_int,
+    'updated_on': new Date()
+  };
+  Credit_Debit.updateOne({ 'credit_debit_id_int': req.body.credit_debit_id_int }, { $set: updatedobj }, (err, updatedObj) => {
+    if (err) {
+      res.json({ message: "Something is wrong " + err, status: false, updatedObj: {} });
+    } else {
+      res.json({ message: "Record updated Successfully !!", status: true,  });
+    }
+  });
+}
+// credit - debit end
+
+
 //task start
 
 
 router.post("/uploadfileoftask", uploadTaskfiles.array("photos[]"), async (req, res) => {
   fileuploaCommon(req, res)
-
-
 });
 
 router.delete('/task/:task_id_int/:logged_in_user_id_int/:customer_id_int', (req, res, next) => {
@@ -177,45 +478,46 @@ router.delete('/task/:task_id_int/:logged_in_user_id_int/:customer_id_int', (req
       if (taskData.task_for == 'Agent') {
         console.log(4);
         if (taskData.account_id_int) {
-          
-          let bankdatafroAcc = await findBankdata(taskData.account_id_int);  console.log(7);
+
+          let bankdatafroAcc = await findBankdata(taskData.account_id_int); console.log(7);
           if (bankdatafroAcc.hardCopyDocArr.length > 0) {
             let newhardCopyArr = [];
             bankdatafroAcc.hardCopyDocArr.forEach((perDoc) => {
-              if (perDoc.task_id_int ==req.params. task_id_int) {
-               perDoc.task_id_int = perDoc.agent_id_int = '';
+              if (perDoc.task_id_int == req.params.task_id_int) {
+                perDoc.task_id_int = perDoc.agent_id_int = '';
 
               }
               perDoc.da = new Date();
               newhardCopyArr.push({ ...perDoc });
-            });  
+            });
             await BankPostOfficeAccounts.updateOne({ 'account_id_int': taskData.account_id_int }, { $set: { 'hardCopyDocArr': newhardCopyArr, } }, async (err, obj) => {
               console.log(8); console.log(9);
             });
           }
         }
-        if (taskData.policy_id_int) {   console.log(10);
+        if (taskData.policy_id_int) {
+          console.log(10);
           let bankdatafropol = await findBankdata(taskData.policy_id_int);
-         
+
           if (bankdatafropol.hardCopyDocArr.length > 0) {
             let newhardCopyArr2 = [];
             bankdatafropol.hardCopyDocArr.forEach((perDoc) => {
-              if (perDoc.task_id_int ==req.params. task_id_int) {
-                  perDoc.task_id_int = perDoc.agent_id_int = '';
+              if (perDoc.task_id_int == req.params.task_id_int) {
+                perDoc.task_id_int = perDoc.agent_id_int = '';
 
               }
               perDoc.da = new Date();
               newhardCopyArr2.push({ ...perDoc });
-            });  
+            });
             await BankPostOfficeAccounts.updateOne({ 'account_id_int': taskData.policy_id_int }, { $set: { 'hardCopyDocArr': newhardCopyArr2, } }, async (err, obj) => {
-               
+
             });
           }
         }
       }
 
       Tasks.find({ $and: [{ "tablestatus": "TRUE" }, { "customer_id_int": req.params.customer_id_int }] }, function (err, TaskList) {
-        console.log(13); 
+        console.log(13);
         res.json({ message: "Task deleted Successfully !!", status: true, "TaskList": TaskList });
       }).sort({ task_id_int: -1 });
     }
@@ -341,7 +643,54 @@ addTask = (req, res, next) => {
     });
   }).sort({ task_id_int: -1 });;
 }
+updateTask = (req, res, next) => {
+  let updatedobj = {
+    taskname: req.body.taskname ? req.body.taskname.trim() : '',
+    taskdetail: req.body.taskdetail ? req.body.taskdetail.trim() : '',
+    tasklevel: req.body.tasklevel ? req.body.tasklevel.trim() : '',
+    taskpriority: req.body.taskpriority ? req.body.taskpriority.trim() : '',
+    task_for: req.body.task_for ? req.body.task_for.trim() : '',
+    task_for_id_int: req.body.task_for_id_int ? parseInt(req.body.task_for_id_int) : 0,
+    adding_date: new Date(),
+    start_date: req.body.start_date,
+    expected_end_date: req.body.expected_end_date,
+    start_time: req.body.start_time,
+    expected_end_time: req.body.expected_end_time,
+    inprogress_date: req.body.inprogress_date,
+    complete_date: req.body.complete_date,
+    inprogress_remark: req.body.inprogress_remark,
+    complete_remark: req.body.complete_remark,
+    account_id_int: req.body.account_id_int,
+    policy_id_int: req.body.policy_id_int,
+    competedRemarkIfPhsicalDoWereThere: req.body.competedRemarkIfPhsicalDoWereThere ? req.body.competedRemarkIfPhsicalDoWereThere : [],
 
+    imageArr: req.body.imageArr,
+    'updated_by': req.body.logged_in_user_id_int,
+    'updated_on': new Date()
+  };
+  Tasks.updateOne({ 'task_id_int': req.body.task_id_int }, { $set: updatedobj }, (err, updatedObj) => {
+    if (err) {
+      res.json({ message: "Something is wrong " + err, status: false, updatedObj: {} });
+    } else {
+
+      if (req.body.policyHardCopyDocArr.length > 0 || req.body.accountHardCopyDocArr.length > 0) {
+        if (req.body.policyHardCopyDocArr.length > 0) {
+
+          updateHardocArryOfPolicy_alias_account("Updated", "Policy", req.body.policy_id_int, req, res, next);
+        } else {
+          updateHardocArryOfPolicy_alias_account("Updated", "Account", req.body.account_id_int, req, res, next);
+        }
+      } else {
+
+        Tasks.find({ $and: [{ "tablestatus": "TRUE" }, { "customer_id_int": req.body.customer_id_int }] }, function (err, TaskList) {
+          res.json({ message: "Task updated Successfully !!", status: true, "TaskList": TaskList });
+        }).sort({ task_id_int: -1 });
+      }
+
+
+    }
+  });
+}
 updateHardocArryOfPolicy_alias_account = (action, what, col, req, res, next) => {
   let hardCopyDocArr = [];
   if (what == 'Policy') {
@@ -374,54 +723,7 @@ updateHardocArryOfPolicy_alias_account = (action, what, col, req, res, next) => 
     }
   });
 }
-updateTask = (req, res, next) => {
-  let updatedobj = {
-    taskname: req.body.taskname ? req.body.taskname.trim() : '',
-    taskdetail: req.body.taskdetail ? req.body.taskdetail.trim() : '',
-    tasklevel: req.body.tasklevel ? req.body.tasklevel.trim() : '',
-    taskpriority: req.body.taskpriority ? req.body.taskpriority.trim() : '',
-    task_for: req.body.task_for ? req.body.task_for.trim() : '',
-    task_for_id_int: req.body.task_for_id_int ? parseInt(req.body.task_for_id_int) : 0,
-    adding_date: new Date(),
-    start_date: req.body.start_date,
-    expected_end_date: req.body.expected_end_date,
-    start_time: req.body.start_time,
-    expected_end_time: req.body.expected_end_time,
-    inprogress_date: req.body.inprogress_date,
-    complete_date: req.body.complete_date,
-    inprogress_remark: req.body.inprogress_remark,
-    complete_remark: req.body.complete_remark,
-    account_id_int: req.body.account_id_int,
-    policy_id_int: req.body.policy_id_int,
 
-
-    imageArr: req.body.imageArr,
-    'updated_by': req.body.logged_in_user_id_int,
-    'updated_on': new Date()
-  };
-  Tasks.updateOne({ 'task_id_int': req.body.task_id_int }, { $set: updatedobj }, (err, updatedObj) => {
-    if (err) {
-      res.json({ message: "Something is wrong " + err, status: false, updatedObj: {} });
-    } else {
-
-      if (req.body.policyHardCopyDocArr.length > 0 || req.body.accountHardCopyDocArr.length > 0) {
-        if (req.body.policyHardCopyDocArr.length > 0) {
-
-          updateHardocArryOfPolicy_alias_account("Updated", "Policy", req.body.policy_id_int, req, res, next);
-        } else {
-          updateHardocArryOfPolicy_alias_account("Updated", "Account", req.body.account_id_int, req, res, next);
-        }
-      } else {
-
-        Tasks.find({ $and: [{ "tablestatus": "TRUE" }, { "customer_id_int": req.body.customer_id_int }] }, function (err, TaskList) {
-          res.json({ message: "Task updated Successfully !!", status: true, "TaskList": TaskList });
-        }).sort({ task_id_int: -1 });
-      }
-
-
-    }
-  });
-}
 
 // task end
 //agent start
@@ -808,6 +1110,9 @@ addAccount = (req, res, next) => {
           agent_id_int: req.body.agent_id_int,
           user_id_int: req.body.user_id_int,
           account_opening_date: req.body.account_opening_date,
+          account_maturity_date: req.body.account_maturity_date,
+          is_dependent: req.body.is_dependent,
+
           ifsc: req.body.ifsc,
           unique_id_for_account: req.body.unique_id_for_account,
           otherdetails: req.body.otherdetails,
@@ -860,7 +1165,7 @@ updateAccount = (req, res, next) => {
 
       let updatedobj = {
         parent_account_id_int: req.body.parent_account_id_int,
-
+        is_dependent: req.body.is_dependent,
         user_id_int: req.body.user_id_int,
         bank_or_post_office: req.body.bank_or_post_office,
         ifsc: req.body.ifsc, interest_rate_list: req.body.interest_rate_list,
@@ -878,6 +1183,7 @@ updateAccount = (req, res, next) => {
         agent_id_int: req.body.agent_id_int,
         organisation_img: req.body.organisation.replace('', '_') + '.jpeg',
         account_opening_date: req.body.account_opening_date,
+        account_maturity_date: req.body.account_maturity_date,
         organisation: req.body.organisation,
         mobile_given_for_account: req.body.mobile_given_for_account,
         email_given_for_account: req.body.email_given_for_account,
@@ -1096,10 +1402,10 @@ router.get('/initialData', (req, res, next) => {
       }],
     'hometilesListBelowcard': [{
       rowKey: [{
-        'link': '../accounts/ALL/-1',
+        'link': '../accounting',
         'title': 'Accounting', 'img': 'assets/accounting.jpg',
         'imgstyle': "height: 90%;  width: 75%;",
-        'subtitle': 'Manage Expenses, Credit/Debit, Loan',
+        'subtitle': 'Manage Payments (Paid, Received)',
         'cardColor': '#e3edff',
         'titleColor': "black",
         'subtitleColor': "black"

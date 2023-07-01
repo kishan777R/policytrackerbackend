@@ -16,7 +16,10 @@ const taskSchema = mongoose.Schema({
         type: Number,
 
     },
-      
+    competedRemarkIfPhsicalDoWereThere: {
+        type: Array, 
+    },
+    
     policy_id_int: {
         type: Number,
 

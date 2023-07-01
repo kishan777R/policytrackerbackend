@@ -1,0 +1,99 @@
+
+
+//Category start
+ 
+router.delete('/category/:category_id_int/:logged_in_user_id_int/:customer_id_int', (req, res, next) => {
+  Category.updateOne({ 'category_id_int': req.params.category_id_int }, { $set: { 'tablestatus': 'FALSE', 'deleted_by': req.params.logged_in_user_id_int, 'deleted_on': new Date() } }, async (err, deletedCategory) => {
+    if (err) {
+      res.json({ message: "Something is wrong", status: false });
+    } else {
+ 
+
+      Category.find({ $and: [{ "tablestatus": "TRUE" }, { "customer_id_int": req.params.customer_id_int }] }, function (err, CategryList) {
+       
+        res.json({ message: "Category deleted Successfully !!", status: true, "CategryList": CategryList });
+      }).sort({ category_id_int: -1 });
+
+
+    }
+  });
+});
+
+router.get('/category/:category_id_int', (req, res, next) => {
+  Category.findOne({ $and: [{ "tablestatus": "TRUE" }, { "category_id_int": req.params.category_id_int }] }, function (err, CategoryOne) {
+    res.json(CategoryOne);
+  });
+});
+router.get('/categorylist/:customer_id_int', (req, res, next) => {
+  Category.find({ $and: [{ "tablestatus": "TRUE" }, { "customer_id_int": req.params.customer_id_int }] }, function (err, CategoryList) {
+    res.json(CategoryList);
+  }).sort({ category_id_int: -1 });
+});
+
+
+router.post('/category', (req, res, next) => {
+  if (!req.body.category_id_int || req.body.category_id_int == 0) {
+
+    // add start
+    console.log("Adding category ");
+
+    addCategory(req, res, next);
+    // add end
+
+  } else {
+    // update start
+    console.log("Updating category ");
+    updateCategory(req, res, next);
+    // update end
+  }
+});
+addCategory = (req, res, next) => {
+  Category.findOne({}, function (err, lastCategory) {
+    if (lastCategory) {
+      var category_id_int = lastCategory.category_id_int + 1;
+    } else {
+      var category_id_int = 1;
+    }
+    let newCategoryOBJ = new Category({
+      category_id_int: category_id_int,
+      customer_id_int: req.body.customer_id_int,
+      category_title: req.body.category_title ? req.body.category_title.trim() : '',
+
+      created_on: new Date(),
+      created_by: req.body.logged_in_user_id_int,
+      tablestatus: 'TRUE',
+    });
+    newCategoryOBJ.save((err, newCategory) => {
+      if (err) {
+        res.json({ message: "Something is wrong in adding Category" + err, status: false, newCategory: {} });
+      } else {
+
+        Category.find({ $and: [{ "tablestatus": "TRUE" }, { "customer_id_int": req.params.customer_id_int }] }, function (err, CategryList) {
+           
+            res.json({ message: "Category Added Successfully !!", status: true, "CategryList": CategryList });
+          }).sort({ category_id_int: -1 });
+        
+      }
+    });
+  }).sort({ category_id_int: -1 });;
+}
+updateCategory = (req, res, next) => {
+  let updatedobj = {
+ 
+    category_title: req.body.category_title ? req.body.category_title.trim() : '',
+    
+    'updated_by': req.body.logged_in_user_id_int,
+    'updated_on': new Date()
+  };
+  Category.updateOne({ 'category_id_int': req.body.category_id_int }, { $set: updatedobj }, (err, updatedObj) => {
+    if (err) {
+      res.json({ message: "Something is wrong " + err, status: false, updatedObj: {} });
+    } else {     Category.find({ $and: [{ "tablestatus": "TRUE" }, { "customer_id_int": req.params.customer_id_int }] }, function (err, CategryList) {
+     
+        res.json({ message: "Category updated Successfully !!", status: true, "CategryList": CategryList });
+      }).sort({ category_id_int: -1 });
+        
+    }
+  });
+}
+// credit - debit end

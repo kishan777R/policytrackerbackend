@@ -9,6 +9,10 @@ const bankPostOfficeAccountSchema = mongoose.Schema({
         type: Number,
 
     },
+    is_dependent:{   
+        type: String,
+
+    },
     customer_id_int :{   // for login orpose
         type: Number,
 
@@ -22,6 +26,10 @@ const bankPostOfficeAccountSchema = mongoose.Schema({
 
     },
     account_opening_date: {
+        type: String,
+
+    },
+    account_maturity_date: {
         type: String,
 
     },
