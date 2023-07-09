@@ -284,7 +284,7 @@ router.post("/uploadfileofcredit_debit", uploadTcredit_debitfiles.array("photos[
   fileuploaCommon(req, res)
 });
 
-router.delete('/credit_debit/:credit_debit_id_int/:extraaction/:logged_in_user_id_int/:customer_id_int', (req, res, next) => {
+router.delete('/credit_debit/:credit_debit_id_int/:logged_in_user_id_int/:customer_id_int', (req, res, next) => {
   Credit_Debit.updateOne({ 'credit_debit_id_int': req.params.credit_debit_id_int }, { $set: { 'tablestatus': 'FALSE', 'deleted_by': req.params.logged_in_user_id_int, 'deleted_on': new Date() } }, async (err, deletedcredit_debit) => {
     if (err) {
       res.json({ message: "Something is wrong", status: false });
@@ -352,16 +352,18 @@ router.post('/credit_debitlist', async (req, res, next) => {
   }
   if (req.body.filterPayment_date1 && req.body.filterPayment_date2) {
   }
-  let creditDebitListTotalRecord = -1;
+  let creditDebitListTotalRecord = 0;
   if (req.body.skip == 0) {
     creditDebitListTotalRecord = await Credit_Debit_total_ecod(req.body.customer_id_int);
   }
+
+  console.log(andArr);
   Credit_Debit.find({ $and: andArr }, function (err, credit_debitList) {
     res.json({ "list": credit_debitList, "creditDebitListTotalRecord": creditDebitListTotalRecord });
   }).sort({ credit_debit_id_int: -1 }).limit(req.body.limit).skip(req.body.skip);
 });
 Credit_Debit_total_ecod = (customer_id_int) => {
-  return Credit_Debit.find({ $and: [{ "tablestatus": "TRUE" }, { "customer_id_int": customer_id_int }] }).estimatedDocumentCount();
+  return Credit_Debit.countDocuments({ $and: [{ "tablestatus": "TRUE" }, { "customer_id_int": customer_id_int }] }) ;
 }
 
 router.post('/credit_debit', (req, res, next) => {
@@ -1299,6 +1301,26 @@ router.get('/initialData', (req, res, next) => {
       ]
     }],
 
+    'balanceRecordTileList': [ {
+      rowKey: [
+
+        {
+          'link': '',
+          'title': 'Documents ', 'img': 'assets/doc-icon.jpg', 'imgstyle': "  width: 68%;",'titlestyle': "  margin: 15px;",
+          'subtitle': 'Docs related to record',
+          'cardColor': '#e3edff',
+          'titleColor': "black",
+          'subtitleColor': "black",
+          'functionName': "",
+          'id': "open-modalDocs"
+
+        },
+        {
+
+
+        }
+      ]
+    }],
 
     'userTileList': [{
       rowKey: [
