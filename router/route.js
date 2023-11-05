@@ -4,7 +4,7 @@ const https = require('https');
 const qs = require('querystring');
 const fs = require('fs');
 const path = require('path');
-
+require('dotenv').config();
 const router = express.Router();
 const Agents = require('../model/agents'); const Category = require('../model/category');
 
@@ -14,12 +14,8 @@ const Credit_Debit = require('../model/credit_debit');
 
 var nodemailer = require('nodemailer');
 
-var request = require("request");
-
-
-
-
-const allconst = require('./contants');
+var request = require("request"); 
+const allconst = process.env ;
 const adminemail = 'kishanrock777@gmail.com';
 
 const myemail = "kishanrock777@gmail.com";
