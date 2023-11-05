@@ -7,7 +7,18 @@ var mongoose = require('mongoose');
 /// for atlas
 //mongodb+srv://kishan:111111111@cluster0-t6mie.mongodb.net/edutech?retryWrites=true&w=majority
 //mongodb+srv://xcellinsprocare:111111111@cluster0.i0xczes.mongodb.net/edutech?retryWrites=true&w=majority
+mongoose.connect(process.env.MONGO_URL , { useUnifiedTopology: true, useNewUrlParser: true });
+mongoose.connection.on('connected',()=>{
+  console.log('connected to db');
+});
+
+mongoose.connection.on('error',(err)=>{
+
+  if(err){
+    console.log('Error in db connection '+err );
+  }
  
+});
 /// for atla end
 
 
@@ -32,7 +43,7 @@ var mongoose = require('mongoose');
 
 var bodyParser = require('body-parser');  
 var cors = require('cors');
- 
+const route = require('./router/route');
  
   
 var path = require('path');
@@ -43,13 +54,13 @@ app.use(cors());
 
 app.use(bodyParser.json({limit: '10mb', extended: true}))
 app.use(bodyParser.urlencoded({limit: '10mb', extended: true}))
- 
+app.use('/apipolicy',route);
  
  app.use( express.static(path.join(__dirname,'public')));
 
 app.get('/', function(req, res){
     console.log('called me ');
-   res.send("Hello world error!" ); 
+   res.send("Hello world error!!" ); 
 });
 const Port=process.env.Port || 7500;
 app.listen(Port,()=>{

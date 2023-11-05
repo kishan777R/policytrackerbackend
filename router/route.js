@@ -1459,8 +1459,29 @@ router.get('/initialData', (req, res, next) => {
     }],
     'tilesList': [
       {
-        rowKey: [{
-          'link': '../accounts/Account/ALL/-1',
+        rowKey: [
+          
+          {
+            'link': '/agent/User',
+            'title': 'Users', 'img': 'assets/bank-users-icon.jpg', 'imgstyle': "  width: 96%;",
+            'subtitle': 'Policy Holders, Nominees etc',
+            'cardColor': '#e3edff',
+            'titleColor': "black",
+            'subtitleColor': "black"
+
+          },
+          {
+            'link': '/agent/Agent',
+            'title': 'Agents', 'img': 'assets/bank-agent-icon.jpg',
+            'imgstyle': "height: 90%;  width: 75%;",
+            'subtitle': 'Helpers of your Bank/P.O tasks',
+            'cardColor': '#e3edff',
+            'titleColor': "black",
+            'subtitleColor': "black"
+  
+          },
+          {
+          'link': '/accounts/Account/ALL/-1',
           'title': 'Accounts', 'img': 'assets/bank-account-icon.jpg',
           'imgstyle': "height: 90%;  width: 75%;",
           'subtitle': 'Bank or Post Office Accounts',
@@ -1469,19 +1490,17 @@ router.get('/initialData', (req, res, next) => {
           'subtitleColor': "black"
 
         },
-        {
-          'link': '../agents/Agent',
-          'title': 'Agents', 'img': 'assets/bank-agent-icon.jpg',
-          'imgstyle': "height: 90%;  width: 75%;",
-          'subtitle': 'Helpers of your Bank/P.O tasks',
-          'cardColor': '#e3edff',
-          'titleColor': "black",
-          'subtitleColor': "black"
+       
+           
+       
+        ]
+      }
+      ,
 
-        }
-          ,
-        {
-          'link': '../accounts/Policy/ALL/-1',
+      {
+        rowKey: [
+           {
+          'link': '/accounts/Policy/ALL/-1',
           'title': 'Policies', 'img': 'assets/bank-policies-icon.jpg',
           'imgstyle': " width: 93%;",
           'subtitle': 'FD, KVP, Mutual Fund, LIC etc',
@@ -1490,21 +1509,6 @@ router.get('/initialData', (req, res, next) => {
           'subtitleColor': "black"
 
         },
-        ]
-      }
-      ,
-
-      {
-        rowKey: [
-          {
-            'link': '../agents/User',
-            'title': 'Users', 'img': 'assets/bank-users-icon.jpg', 'imgstyle': "  width: 96%;",
-            'subtitle': 'Policy Holders, Nominees etc',
-            'cardColor': '#e3edff',
-            'titleColor': "black",
-            'subtitleColor': "black"
-
-          },
           {
             'link': '/tasks',
             'title': 'Tasks', 'img': 'assets/task-icon.jpg', 'imgstyle': "height: 90%;  width: 75%;",
