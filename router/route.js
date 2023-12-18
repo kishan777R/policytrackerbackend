@@ -14,8 +14,8 @@ const Credit_Debit = require('../model/credit_debit');
 
 var nodemailer = require('nodemailer');
 
-var request = require("request"); 
-const allconst = process.env ;
+var request = require("request");
+const allconst = process.env;
 const adminemail = 'kishanrock777@gmail.com';
 
 const myemail = "kishanrock777@gmail.com";
@@ -326,19 +326,17 @@ router.post('/credit_debitlist', async (req, res, next) => {
     }
   });
   if (filterAccountIdAccountingArr.length > 0) {
-    andArr.push({ account_id_int: { $in: filterPayment_modeArr } })
+    andArr.push({ account_id_int: { $in: filterAccountIdAccountingArr } })
   }
 
   if (req.body.searchTerm.trim()) {
     andArr.push(
       {
         $or: [
-          { amount: req.body.searchTerm.trim() },
-          {  transaction_id: req.body.searchTerm.trim() }, 
-          {  transaction_ref: req.body.searchTerm.trim() }, 
-          {  payment_mode: req.body.searchTerm.trim() }, 
-          {  payment_mode_name_if_other_selected: req.body.searchTerm.trim() }, 
-
+          
+          { transaction_id: req.body.searchTerm.trim() },
+          { transaction_ref: req.body.searchTerm.trim() }, 
+          { payment_mode_name_if_other_selected: req.body.searchTerm.trim() }, 
           { paid_to_or_received_from: req.body.searchTerm.trim() },
           { payment_title: req.body.searchTerm.trim() },
           { otherdetails: req.body.searchTerm.trim() }
@@ -350,7 +348,7 @@ router.post('/credit_debitlist', async (req, res, next) => {
   }
   let creditDebitListTotalRecord = 0;
   if (req.body.skip == 0) {
-    creditDebitListTotalRecord = await Credit_Debit_total_ecod(req.body.customer_id_int);
+    creditDebitListTotalRecord = await Credit_Debit_total_ecod(andArr);
   }
 
   console.log(andArr);
@@ -358,8 +356,8 @@ router.post('/credit_debitlist', async (req, res, next) => {
     res.json({ "list": credit_debitList, "creditDebitListTotalRecord": creditDebitListTotalRecord });
   }).sort({ credit_debit_id_int: -1 }).limit(req.body.limit).skip(req.body.skip);
 });
-Credit_Debit_total_ecod = (customer_id_int) => {
-  return Credit_Debit.countDocuments({ $and: [{ "tablestatus": "TRUE" }, { "customer_id_int": customer_id_int }] }) ;
+Credit_Debit_total_ecod = (andArr) => {
+  return Credit_Debit.countDocuments({ $and: andArr });
 }
 
 router.post('/credit_debit', (req, res, next) => {
@@ -450,7 +448,7 @@ updatecredit_debit = (req, res, next) => {
     if (err) {
       res.json({ message: "Something is wrong " + err, status: false, updatedObj: {} });
     } else {
-      res.json({ message: "Record updated Successfully !!", status: true,  });
+      res.json({ message: "Record updated Successfully !!", status: true, });
     }
   });
 }
@@ -1297,12 +1295,12 @@ router.get('/initialData', (req, res, next) => {
       ]
     }],
 
-    'balanceRecordTileList': [ {
+    'balanceRecordTileList': [{
       rowKey: [
 
         {
           'link': '',
-          'title': 'Documents ', 'img': 'assets/doc-icon.jpg', 'imgstyle': "  width: 68%;",'titlestyle': "  margin: 15px;",
+          'title': 'Documents ', 'img': 'assets/doc-icon.jpg', 'imgstyle': "  width: 68%;", 'titlestyle': "  margin: 15px;",
           'subtitle': 'Docs related to record',
           'cardColor': '#e3edff',
           'titleColor': "black",
@@ -1420,7 +1418,7 @@ router.get('/initialData', (req, res, next) => {
       }],
     'hometilesListBelowcard': [{
       rowKey: [{
-        'link': '../accounting',
+        'link': '/accounting',
         'title': 'Accounting', 'img': 'assets/accounting.jpg',
         'imgstyle': "height: 90%;  width: 75%;",
         'subtitle': 'Manage Payments (Paid, Received)',
@@ -1456,7 +1454,7 @@ router.get('/initialData', (req, res, next) => {
     'tilesList': [
       {
         rowKey: [
-          
+
           {
             'link': '/agent/User',
             'title': 'Users', 'img': 'assets/bank-users-icon.jpg', 'imgstyle': "  width: 96%;",
@@ -1474,37 +1472,37 @@ router.get('/initialData', (req, res, next) => {
             'cardColor': '#e3edff',
             'titleColor': "black",
             'subtitleColor': "black"
-  
+
           },
           {
-          'link': '/accounts/Account/ALL/-1',
-          'title': 'Accounts', 'img': 'assets/bank-account-icon.jpg',
-          'imgstyle': "height: 90%;  width: 75%;",
-          'subtitle': 'Bank or Post Office Accounts',
-          'cardColor': '#e3edff',
-          'titleColor': "black",
-          'subtitleColor': "black"
+            'link': '/accounts/Account/ALL/-1',
+            'title': 'Accounts', 'img': 'assets/bank-account-icon.jpg',
+            'imgstyle': "height: 90%;  width: 75%;",
+            'subtitle': 'Bank or Post Office Accounts',
+            'cardColor': '#e3edff',
+            'titleColor': "black",
+            'subtitleColor': "black"
 
-        },
-       
-           
-       
+          },
+
+
+
         ]
       }
       ,
 
       {
         rowKey: [
-           {
-          'link': '/accounts/Policy/ALL/-1',
-          'title': 'Policies', 'img': 'assets/bank-policies-icon.jpg',
-          'imgstyle': " width: 93%;",
-          'subtitle': 'FD, KVP, Mutual Fund, LIC etc',
-          'cardColor': '#e3edff',
-          'titleColor': "black",
-          'subtitleColor': "black"
+          {
+            'link': '/accounts/Policy/ALL/-1',
+            'title': 'Policies', 'img': 'assets/bank-policies-icon.jpg',
+            'imgstyle': " width: 93%;",
+            'subtitle': 'FD, KVP, Mutual Fund, LIC etc',
+            'cardColor': '#e3edff',
+            'titleColor': "black",
+            'subtitleColor': "black"
 
-        },
+          },
           {
             'link': '/tasks',
             'title': 'Tasks', 'img': 'assets/task-icon.jpg', 'imgstyle': "height: 90%;  width: 75%;",
